@@ -1,10 +1,10 @@
-(function (root, votefactory) {
+(function (root, factory) {
     if (typeof define === 'function' && define.amd) {
-        define([], votefactory)
+        define([], factory)
     } else if (typeof module === 'object' && module.exports) {
-        module.exports = votefactory()
+        module.exports = factory()
     } else {
-        root.controls = votefactory()
+        root.controls = factory()
     }
 }(this, function () {
     'use strict'
