@@ -341,6 +341,7 @@
         <img id="albumCoverImg" src="images/default_cover.png" alt="Album cover"/>
     </div>
 
+
     <div class="nowPlaying-artistInfo">
         <h3 id="modalname"></h3>
         <p class="artistAlbumLine"><span id="modaldetail"></span></p>
@@ -533,7 +534,7 @@
             <div style="float: left;">
                 <a href="#" onclick="controls.doPrevious(); return false"><span id="btprev" title="Previous"><i class="fa fa-fast-backward"></i></span></a>
                 <a href="#" onclick="controls.doPlay(); return false"><span id="btplayNowPlaying" title="Play"><i class="fa fa-play"></i></span></a>
-                <a href="#" onclick="controls.doNext(); return false"><span id="btnext" title="Next"><i class="fa fa-fast-forward"></i></span></a>
+                <a href="#" onclick="controls.checkCookie(); return false"><span id="btnext" title="Next"><i class="fa fa-fast-forward"></i></span></a>
             </div>
             <div style="float: right; margin-right: 10px;">
                 <a href="#" onclick="controls.doRandom(); return false"><span id="randombt" title="Random"><i class="fa fa-random"></i></span></a>
