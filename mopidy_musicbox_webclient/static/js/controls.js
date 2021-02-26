@@ -1,15 +1,25 @@
-(function (root, factory) {
+(function (root, votefactory) {
     if (typeof define === 'function' && define.amd) {
-        define([], factory)
+        define([], votefactory)
     } else if (typeof module === 'object' && module.exports) {
-        module.exports = factory()
+        module.exports = votefactory()
     } else {
-        root.controls = factory()
+        root.controls = votefactory()
     }
 }(this, function () {
     'use strict'
 
     var controls = {
+
+        /* Admin playing rights functions
+        PLAY_NOW
+        PLAY_NEXT
+        ADD_ALL_BOTTOM
+        PLAY_ALL
+        playQueueTrack
+        removeTrack
+        clearQueue
+         */
 
         /**
         * 'onClick' handler for tracks that are rendered in a list.
@@ -19,7 +29,7 @@
         * @param {string} action - The action to perform. Valid actions are:
         *                              PLAY_NOW: add the track at the current queue position and
         *                                        start playback immediately.
-        *                              PLAY_NEXT: insert track after the reference track, if 'index'
+        * @param {string} message                             PLAY_NEXT: insert track after the reference track, if 'index'
         *                                         is provided, or after the current track otherwise.
         *                              ADD_THIS_BOTTOM: add track to bottom of tracklist.
         *                              ADD_ALL_BOTTOM: add all tracks in in the list to bottom of
@@ -53,38 +63,53 @@
 
             action = controls.getAction(action)
 
-            if (action === PLAY_ALL) {
+            /*if (action === PLAY_ALL) {  //Removed due to the admin passcode feautre, added to case PLAY_ALL
                 mopidy.tracklist.clear()
-            }
+            }*/
 
             var trackUris = controls._getTrackURIsForAction(action, trackUri, playlistUri)
             // Add the tracks and start playback if necessary.
             switch (action) {
                 case PLAY_NOW:
                 case PLAY_NEXT:
-                    mopidy.tracklist.index().then(function (currentIndex) {
-                        if (currentIndex === null && action === PLAY_NEXT) {
-                            // Tracklist is empty, start playing new tracks immediately.
-                            action = PLAY_NOW
-                        }
-                        controls._addTrackAtIndex(action, mopidy, trackUris, currentIndex)
-                    })
+                    var passcode = prompt("Enter Passcode");
+                    if(passcode == "Good"){ //Passcode for admin playing rights
+                        mopidy.tracklist.index().then(function (currentIndex) {
+                            if (currentIndex === null && action === PLAY_NEXT) {
+                                // Tracklist is empty, start playing new tracks immediately.
+                                action = PLAY_NOW
+                            }
+                            controls._addTrackAtIndex(action, mopidy, trackUris, currentIndex)
+                        })
+                    }
+                    else{
+                        toast("Just sit back and enjoy the current song you impatient Isaac.", 3000)
+                    }
                     break
                 case INSERT_AT_INDEX:
                     controls._addTrackAtIndex(action, mopidy, trackUris, index)
                     break
                 case ADD_THIS_BOTTOM:
+                    mopidy.tracklist.add({ uris: trackUris })
+                    break
                 case ADD_ALL_BOTTOM:
                 case PLAY_ALL:
-                    mopidy.tracklist.add({uris: trackUris}).then(function (tlTracks) {
-                        if (action === PLAY_ALL) {  // Start playback of selected track immediately.
-                            mopidy.tracklist.filter({criteria: {uri: [trackUri]}}).then(function (tlTracks) {
-                                mopidy.playback.stop().then(function () {
-                                    mopidy.playback.play({tlid: tlTracks[0].tlid})
-                                })
-                            })
-                        }
-                    })
+                    var passcode = prompt("Enter Passcode");
+                    if(passcode == "Good"){ //Passcode for admin playing rights
+                        mopidy.tracklist.clear()  //Transfered code from above
+                        mopidy.tracklist.add({ uris: trackUris }).then(function (tlTracks) {
+                            if (action === PLAY_ALL) {  // Start playback of selected track immediately.
+                                    mopidy.tracklist.filter({ criteria: { uri: [trackUri] } }).then(function (tlTracks) {
+                                        mopidy.playback.stop().then(function () {
+                                            mopidy.playback.play({ tlid: tlTracks[0].tlid })
+                                        })
+                                    })
+                            }
+                        })
+                    }
+                    else{
+                        toast("Just sit back and enjoy the current song you impatient Isaac.", 3000)
+                    }
                     break
                 default:
                     throw new Error('Unexpected tracklist action identifier: ' + action)
@@ -176,10 +201,10 @@
                 pos += 1
             }
 
-            mopidy.tracklist.add({at_position: pos, uris: trackUris}).then(function (tlTracks) {
+            mopidy.tracklist.add({ at_position: pos, uris: trackUris }).then(function (tlTracks) {
                 if (action === PLAY_NOW) {  // Start playback immediately.
                     mopidy.playback.stop().then(function () {
-                        mopidy.playback.play({tlid: tlTracks[0].tlid})
+                        mopidy.playback.play({ tlid: tlTracks[0].tlid })
                     })
                 }
             })
@@ -195,29 +220,47 @@
          * @returns {boolean}
          */
         playQueueTrack: function (tlid) {
-            // Stop directly, for user feedback
-            mopidy.playback.stop()
-            toast('Loading...')
+            var passcode = prompt("Enter Passcode");
+            if(passcode == "Good"){ //Passcode for admin playing rights
+                // Stop directly, for user feedback
+                mopidy.playback.stop()
+                toast('Loading...')
 
-            tlid = tlid || $('#popupQueue').data('tlid')
-            mopidy.playback.play({'tlid': parseInt(tlid)})
-            $('#popupQueue').popup('close')
+                tlid = tlid || $('#popupQueue').data('tlid')
+                mopidy.playback.play({ 'tlid': parseInt(tlid) })
+                $('#popupQueue').popup('close')
+            }
+            else{
+                toast("Just sit back and enjoy the current song you impatient Isaac.", 3000)
+            }
         },
 
         /** *********************************
          *  remove a track from the queue  *
          ***********************************/
         removeTrack: function (tlid, mopidy) {
-            toast('Deleting...')
+            var passcode = prompt("Enter Passcode");
+            if(passcode == "Good"){ //Passcode for admin playing rights
+                toast('Deleting...')
 
-            tlid = tlid || $('#popupQueue').data('tlid')
-            mopidy.tracklist.remove({criteria: {'tlid': [parseInt(tlid)]}})
-            $('#popupQueue').popup('close')
+                tlid = tlid || $('#popupQueue').data('tlid')
+                mopidy.tracklist.remove({ criteria: { 'tlid': [parseInt(tlid)] } })
+                $('#popupQueue').popup('close')
+            }
+            else{
+                toast("Stop trying to be a buzzkill.", 3000)
+            }
         },
 
         clearQueue: function () {
-            mopidy.tracklist.clear()
-            return false
+            var passcode = prompt("Enter Passcode");
+            if(passcode == "Good"){ //Passcode for admin playing rights
+                mopidy.tracklist.clear()
+                return false
+            }
+            else{
+                toast("Stop trying to be a buzzkill.", 3000)
+            }
         },
 
         checkDefaultButtonClick: function (key, parentElement) {
@@ -229,31 +272,37 @@
         },
 
         showAddTrackPopup: function (tlid) {
-            $('#addTrackInput').val('')
-            $('#select-add').empty()
-            tlid = tlid || $('#popupQueue').data('tlid')
-            if (typeof tlid !== 'undefined' && tlid !== '') {
-                // Store the tlid of the track after which we want to perform the insert
-                $('#popupAddTrack').data('tlid', $('#popupQueue').data('tlid'))
-                $('#popupAddTrack').one('popupafterclose', function (event, ui) {
-                    // Ensure that popup attributes are reset when the popup is closed.
-                    $(this).removeData('tlid')
-                })
-                var trackName = popupData[$('#popupQueue').data('track')].name
-                $('#select-add').append('<option value="6" selected="selected">Add Track Below \'' + trackName + '\'</option>')
-            }
-            if (typeof songdata.track.uri !== 'undefined' && songdata.track.uri !== '') {
-                $('#getPlayingBtn').button('enable')
-            } else {
-                $('#getPlayingBtn').button('disable')
-            }
+            var passcode = prompt("Enter Passcode");
+            if(passcode == "Good"){ //Passcode for admin playing rights
+                $('#addTrackInput').val('')
+                $('#select-add').empty()
+                tlid = tlid || $('#popupQueue').data('tlid')
+                if (typeof tlid !== 'undefined' && tlid !== '') {
+                    // Store the tlid of the track after which we want to perform the insert
+                    $('#popupAddTrack').data('tlid', $('#popupQueue').data('tlid'))
+                    $('#popupAddTrack').one('popupafterclose', function (event, ui) {
+                        // Ensure that popup attributes are reset when the popup is closed.
+                        $(this).removeData('tlid')
+                    })
+                    var trackName = popupData[$('#popupQueue').data('track')].name
+                    $('#select-add').append('<option value="6" selected="selected">Add Track Below \'' + trackName + '\'</option>')
+                }
+                if (typeof songdata.track.uri !== 'undefined' && songdata.track.uri !== '') {
+                    $('#getPlayingBtn').button('enable')
+                } else {
+                    $('#getPlayingBtn').button('disable')
+                }
 
-            $('#select-add').append('<option value="1">Play Added Track Next</option>') // PLAY_NEXT
-            $('#select-add').append('<option value="2">Add Track to Bottom of Queue</option>') // ADD_THIS_BOTTOM
-            $('#select-add').trigger('change')
+                $('#select-add').append('<option value="1">Play Added Track Next</option>') // PLAY_NEXT
+                $('#select-add').append('<option value="2">Add Track to Bottom of Queue</option>') // ADD_THIS_BOTTOM
+                $('#select-add').trigger('change')
 
-            $('#popupQueue').popup('close')
-            $('#popupAddTrack').popup('open')
+                $('#popupQueue').popup('close')
+                $('#popupAddTrack').popup('open')
+            }
+            else{
+                toast("Alright, just stop trying to break my damn site.", 3000)
+            }
         },
 
         addTrack: function (trackUri, mopidy) {
@@ -277,7 +326,7 @@
             }
 
             if (typeof tlid !== 'undefined' && tlid !== '') {
-                mopidy.tracklist.index({tlid: parseInt(tlid)}).then(function (index) {
+                mopidy.tracklist.index({ tlid: parseInt(tlid) }).then(function (index) {
                     controls.playTracks(INSERT_AT_INDEX, mopidy, trackUri, CURRENT_PLAYLIST_TABLE, index)
                 })
             } else {
@@ -332,9 +381,9 @@
             $('#popupSave').popup('close')
             $('#saveinput').val('')
             toast('Saving...')
-            mopidy.playlists.create({'name': playlistName, 'uri_scheme': 'm3u'}).then(function (playlist) {
+            mopidy.playlists.create({ 'name': playlistName, 'uri_scheme': 'm3u' }).then(function (playlist) {
                 playlist.tracks = tracks
-                mopidy.playlists.save({'playlist': playlist}).then()
+                mopidy.playlists.save({ 'playlist': playlist }).then()
             })
         },
 
@@ -346,12 +395,12 @@
             }
             $('#popupShowInfo tbody').empty()
 
-            mopidy.library.lookup({'uris': [trackUri]}).then(function (resultDict) {
+            mopidy.library.lookup({ 'uris': [trackUri] }).then(function (resultDict) {
                 var uri = Object.keys(resultDict)[0]
                 var track = resultDict[uri][0]
                 var html = ''
                 var rowTemplate = '<tr><td class="label">{label}:</td><td id="{label}-cell">{text}</td></tr>'
-                var row = {'label': '', 'text': ''}
+                var row = { 'label': '', 'text': '' }
 
                 row.label = 'Name'
                 if (track.name) {
@@ -405,52 +454,52 @@
                 }
 
                 if (track.genre) {
-                    row = {'label': 'Genre', 'text': track.genre}
+                    row = { 'label': 'Genre', 'text': track.genre }
                     html += stringFromTemplate(rowTemplate, row)
                 }
 
                 if (track.track_no) {
-                    row = {'label': 'Track #', 'text': track.track_no}
+                    row = { 'label': 'Track #', 'text': track.track_no }
                     html += stringFromTemplate(rowTemplate, row)
                 }
 
                 if (track.disc_no) {
-                    row = {'label': 'Disc #', 'text': track.disc_no}
+                    row = { 'label': 'Disc #', 'text': track.disc_no }
                     html += stringFromTemplate(rowTemplate, row)
                 }
 
                 if (track.date) {
-                    row = {'label': 'Date', 'text': new Date(track.date).toLocaleString()}
+                    row = { 'label': 'Date', 'text': new Date(track.date).toLocaleString() }
                     html += stringFromTemplate(rowTemplate, row)
                 }
 
                 if (track.length) {
-                    row = {'label': 'Length', 'text': timeFromSeconds(track.length / 1000)}
+                    row = { 'label': 'Length', 'text': timeFromSeconds(track.length / 1000) }
                     html += stringFromTemplate(rowTemplate, row)
                 }
 
                 if (track.bitrate) {
-                    row = {'label': 'Bitrate', 'text': track.bitrate}
+                    row = { 'label': 'Bitrate', 'text': track.bitrate }
                     html += stringFromTemplate(rowTemplate, row)
                 }
 
                 if (track.comment) {
-                    row = {'label': 'Comment', 'text': track.comment}
+                    row = { 'label': 'Comment', 'text': track.comment }
                     html += stringFromTemplate(rowTemplate, row)
                 }
 
                 if (track.musicbrainz_id) {
-                    row = {'label': 'MusicBrainz ID', 'text': track.musicbrainz_id}
+                    row = { 'label': 'MusicBrainz ID', 'text': track.musicbrainz_id }
                     html += stringFromTemplate(rowTemplate, row)
                 }
 
                 if (track.last_modified) {
-                    row = {'label': 'Modified', 'text': track.last_modified}
+                    row = { 'label': 'Modified', 'text': track.last_modified }
                     html += stringFromTemplate(rowTemplate, row)
                 }
 
                 rowTemplate = '<tr><td class="label label-center">{label}:</td><td><input type="text" id="uri-input" value="{text}"></input></td></tr>'
-                row = {'label': 'URI', 'text': uri}
+                row = { 'label': 'URI', 'text': uri }
                 html += stringFromTemplate(rowTemplate, row)
 
                 $('#popupShowInfo tbody').append(html)
@@ -477,7 +526,7 @@
 
         refreshLibrary: function () {
             var uri = $('#refreshLibraryBtn').data('url')
-            mopidy.library.refresh({'uri': uri}).then(function () {
+            mopidy.library.refresh({ 'uri': uri }).then(function () {
                 library.getBrowseDir(uri)
             })
             return false
@@ -533,8 +582,23 @@
         },
 
         doNext: function () {
-            toast('Playing next track...')
+            toast('Fuck you Gaven...', 250)
+
             mopidy.playback.next()
+        },
+
+        checkCookie: function () {
+            //toast('Checking cookie...', 250)
+            /*This function fetches the webpage and triggers the requesthandler hook announced in __init__.py
+            This triggers the PartyRequestHandler in web.py It votes based on IP address and displays the
+            response text from self.write */
+            fetch("/musicbox_webclient/skip")
+                .then(function (response){
+                    return response.text();
+                }).then(function (text){
+                    toast(text, 3000)
+                    //console.log(text);
+                });
         },
 
         backbt: function () {
@@ -579,19 +643,19 @@
         },
 
         doRandom: function () {
-            mopidy.tracklist.setRandom({'value': !random}).then()
+            mopidy.tracklist.setRandom({ 'value': !random }).then()
         },
 
         doRepeat: function () {
-            mopidy.tracklist.setRepeat({'value': !repeat}).then()
+            mopidy.tracklist.setRepeat({ 'value': !repeat }).then()
         },
 
         doConsume: function () {
-            mopidy.tracklist.setConsume({'value': !consume}).then()
+            mopidy.tracklist.setConsume({ 'value': !consume }).then()
         },
 
         doSingle: function () {
-            mopidy.tracklist.setSingle({'value': !single}).then()
+            mopidy.tracklist.setSingle({ 'value': !single }).then()
         },
 
         /** *********************************************
@@ -601,7 +665,7 @@
         doSeekPos: function (value) {
             if (!positionChanging) {
                 positionChanging = value
-                mopidy.playback.seek({'time_position': Math.round(value)}).then(function () {
+                mopidy.playback.seek({ 'time_position': Math.round(value) }).then(function () {
                     positionChanging = null
                 })
             }
@@ -629,7 +693,7 @@
         doVolume: function (value) {
             if (!volumeChanging) {
                 volumeChanging = value
-                mopidy.mixer.setVolume({'volume': parseInt(volumeChanging)}).then(function () {
+                mopidy.mixer.setVolume({ 'volume': parseInt(volumeChanging) }).then(function () {
                     volumeChanging = null
                 })
             }
@@ -647,7 +711,7 @@
         },
 
         doMute: function () {
-            mopidy.mixer.setMute({'mute': !mute})
+            mopidy.mixer.setMute({ 'mute': !mute })
         },
 
         /** **********
@@ -675,7 +739,7 @@
             document.activeElement.blur()
             controls.clearQueue()
             $('input').blur()
-            mopidy.tracklist.add({'uris': [nwuri]})
+            mopidy.tracklist.add({ 'uris': [nwuri] })
             mopidy.playback.play()
             return false
         },
@@ -715,7 +779,7 @@
                     }
                 }
                 if (create) {
-                    return mopidy.playlists.create({'name': name, 'uri_scheme': uri_scheme}).done(function (plist) {
+                    return mopidy.playlists.create({ 'name': name, 'uri_scheme': uri_scheme }).done(function (plist) {
                         console.log("Created playlist '%s'", plist.name)
                         return plist
                     })
@@ -726,7 +790,7 @@
         },
 
         getPlaylistFull: function (uri) {
-            return mopidy.playlists.lookup({'uri': uri}).then(function (pl) {
+            return mopidy.playlists.lookup({ 'uri': uri }).then(function (pl) {
                 playlists[uri] = pl
                 return pl
             })
@@ -753,7 +817,7 @@
                     } else {
                         favourites.tracks = newTracks
                     }
-                    mopidy.playlists.save({'playlist': favourites}).then(function (s) {
+                    mopidy.playlists.save({ 'playlist': favourites }).then(function (s) {
                         controls.showFavourites()
                     })
                 }
@@ -763,7 +827,7 @@
         addFavourite: function (uri, name) {
             uri = uri || $('#streamuriinput').val().trim()
             name = name || $('#streamnameinput').val().trim()
-            mopidy.library.lookup({'uris': [uri]}).then(function (results) {
+            mopidy.library.lookup({ 'uris': [uri] }).then(function (results) {
                 var newTracks = results[uri]
                 if (newTracks.length === 1) {
                     // TODO: Supporting adding an entire playlist?
@@ -797,7 +861,7 @@
             controls.getFavourites().then(function (favourites) {
                 if (favourites && favourites.tracks && index < favourites.tracks.length) {
                     favourites.tracks.splice(index, 1)
-                    mopidy.playlists.save({'playlist': favourites}).then(function (s) {
+                    mopidy.playlists.save({ 'playlist': favourites }).then(function (s) {
                         controls.showFavourites()
                     })
                     $('#popupConfirmDelete').popup('close')
@@ -848,7 +912,7 @@
                         uris.push(rs[1])
                     }
                 }
-                mopidy.library.lookup({'uris': uris}).then(function (results) {
+                mopidy.library.lookup({ 'uris': uris }).then(function (results) {
                     var tracks = [] // Prepare a list of tracks to add.
                     for (var key in streamUris) {
                         var rs = streamUris[key]
