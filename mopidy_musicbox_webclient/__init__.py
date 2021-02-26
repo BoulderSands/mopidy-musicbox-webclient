@@ -1,6 +1,9 @@
 import pathlib
+import os
 
 import pkg_resources
+
+import tornado.web
 
 from mopidy import config, ext
 
@@ -9,6 +12,23 @@ __version__ = pkg_resources.get_distribution(
 ).version
 
 
+def factory(config, core):
+    from tornado.web import RedirectHandler
+    from .web import IndexHandler, StaticHandler, PartyRequestHandler
+
+    path = pathlib.Path(__file__).parent / "static"
+    data = {'track':"", 'votes':[]}
+    print("Normal Factory")
+    
+    
+    return [
+        (r"/", RedirectHandler, {"url": "index.html"}),
+        (r"/(index.html)", IndexHandler, {"config": config, "path": path}),
+        (r"/skip", PartyRequestHandler, {'core': core, 'data':data, 'config':config}), #added for vote to skip feature
+        (r"/(.*)", StaticHandler, {"path": path})
+
+    ]
+
 class Extension(ext.Extension):
 
     dist_name = "Mopidy-MusicBox-Webclient"
@@ -16,10 +36,12 @@ class Extension(ext.Extension):
     version = __version__
 
     def get_default_config(self):
-        return config.read(pathlib.Path(__file__).parent / "ext.conf")
+        conf_file = os.path.join(os.path.dirname(__file__), 'ext.conf')
+        return config.read(conf_file)
 
     def get_config_schema(self):
-        schema = super().get_config_schema()
+        schema = super(Extension, self).get_config_schema()
+        schema['votes_to_skip'] = config.Integer(minimum=0)
         schema["musicbox"] = config.Boolean(optional=True)
         schema["websocket_host"] = config.Hostname(optional=True)
         schema["websocket_port"] = config.Port(optional=True)
@@ -37,17 +59,12 @@ class Extension(ext.Extension):
         return schema
 
     def setup(self, registry):
+        registry.add('http:static', {
+            'name': self.ext_name,
+            'path': os.path.join(os.path.dirname(__file__), 'static'),
+        })
         registry.add(
-            "http:app", {"name": self.ext_name, "factory": self.factory}
+            "http:app", {"name": self.ext_name, "factory": factory}
         )
+        print("everytime?!")
 
-    def factory(self, config, core):
-        from tornado.web import RedirectHandler
-        from .web import IndexHandler, StaticHandler
-
-        path = pathlib.Path(__file__).parent / "static"
-        return [
-            (r"/", RedirectHandler, {"url": "index.html"}),
-            (r"/(index.html)", IndexHandler, {"config": config, "path": path}),
-            (r"/(.*)", StaticHandler, {"path": path}),
-        ]
