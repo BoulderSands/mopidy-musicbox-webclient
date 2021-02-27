@@ -936,7 +936,7 @@
         },
 
         haltSystem: function () {
-            $.post('/settings/shutdown')
+            fetch("/musicbox_webclient/shutdown")
             toast('Stopping system...', 10000)
             setTimeout(function () {
                 window.history.back()
@@ -944,7 +944,7 @@
         },
 
         rebootSystem: function () {
-            $.post('/settings/reboot')
+            fetch("/musicbox_webclient/restart")
             toast('Rebooting...', 10000)
             setTimeout(function () {
                 window.history.back()
