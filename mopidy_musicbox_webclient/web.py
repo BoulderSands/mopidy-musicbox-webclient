@@ -5,6 +5,7 @@ import string
 import urllib.parse
 
 import tornado.web
+import os
 
 import mopidy_musicbox_webclient.webclient as mmw
 
@@ -24,6 +25,20 @@ class StaticHandler(tornado.web.StaticFileHandler):
     @classmethod
     def get_version(cls, settings, path):
         return mmw.Extension.version
+
+class ShutdownHandler(tornado.web.RequestHandler):
+
+    def get(self):
+        print("Shutting down now")
+        os.system("sudo shutdown now")
+
+class RestartHandler(tornado.web.RequestHandler):
+
+    def get(self):
+        print("Restarting now")
+        os.system("sudo reboot now")
+
+
 
 class PartyRequestHandler(tornado.web.RequestHandler):
 

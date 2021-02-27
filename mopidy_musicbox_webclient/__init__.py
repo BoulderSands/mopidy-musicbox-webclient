@@ -14,7 +14,7 @@ __version__ = pkg_resources.get_distribution(
 
 def factory(config, core):
     from tornado.web import RedirectHandler
-    from .web import IndexHandler, StaticHandler, PartyRequestHandler
+    from .web import IndexHandler, StaticHandler, PartyRequestHandler, ShutdownHandler, RestartHandler
 
     path = pathlib.Path(__file__).parent / "static"
     data = {'track':"", 'votes':[]}
@@ -25,6 +25,8 @@ def factory(config, core):
         (r"/", RedirectHandler, {"url": "index.html"}),
         (r"/(index.html)", IndexHandler, {"config": config, "path": path}),
         (r"/skip", PartyRequestHandler, {'core': core, 'data':data, 'config':config}), #added for vote to skip feature
+        (r"/shutdown", ShutdownHandler), #added for shutdown feature
+        (r"/restart", RestartHandler), #added for restart feature
         (r"/(.*)", StaticHandler, {"path": path})
 
     ]
